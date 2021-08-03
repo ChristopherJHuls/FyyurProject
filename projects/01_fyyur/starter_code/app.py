@@ -2,6 +2,7 @@
 # Imports
 #----------------------------------------------------------------------------#
 
+from datetime import date
 import json
 from operator import ge
 import re
@@ -44,7 +45,7 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String()), nullable=False)#TODO Fix the arracy vs string issue here. 
+    genres = db.Column(db.ARRAY(db.String()), nullable=False)
     website_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
@@ -58,18 +59,20 @@ class Artist(db.Model):
     city = db.Column(db.String(120), nullable=False)
     state = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String()), nullable=False)#TODO Fix the arracy vs string issue here.
+    genres = db.Column(db.ARRAY(db.String()), nullable=False)
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website_link = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
+    venues = db.relationship('Venue', secondary='Show', backref=db.backref('shows', lazy=True))
 
 class Show(db.Model):
   __tablename__ = 'Show'
 
-  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
-  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
+  show_id = db.Column(db.Integer, primary_key=True)
+  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
+  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
   start_time = db.Column(db.DateTime, nullable=False)
 
 #----------------------------------------------------------------------------#
@@ -77,6 +80,7 @@ class Show(db.Model):
 #----------------------------------------------------------------------------#
 
 def format_datetime(value, format='medium'):
+  value = value.strftime('%m/%d/%Y, %H:%M:%S')
   date = dateutil.parser.parse(value)
   if format == 'full':
       format="EEEE MMMM, d, y 'at' h:mma"
@@ -94,7 +98,6 @@ app.jinja_env.filters['datetime'] = format_datetime
 def index():
   return render_template('pages/home.html')
 
-
 #  Venues
 #  ----------------------------------------------------------------
 
@@ -111,8 +114,6 @@ def venues():
       'venues': [{
         'id': venue.id,
         'name': venue.name
-
-        #TODO: number of upcoming Shows - I think this is the table join 
       }
       for venue in venues if venue.city == i.city and venue.state == i.state]
     })
@@ -144,8 +145,36 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
-  venue = Venue.query.get(venue_id)  
-  return render_template('pages/show_venue.html', venue = venue)
+  venue = Venue.query.get(venue_id)
+  currentTime = datetime.now()
+  upcoming_shows = db.session.query(Artist, Show).join(Show).join(Venue).filter(Show.venue_id==venue_id, Show.artist_id==Artist.id, Show.start_time > currentTime).all()
+  past_shows = db.session.query(Artist, Show).join(Show).join(Venue).filter(Show.venue_id==venue_id, Show.artist_id==Artist.id, Show.start_time < currentTime).all()
+
+  data = {
+    'id': venue.id,
+    'name': venue.name,
+    'city': venue.city,
+    'state': venue.state,
+    'address': venue.address,
+    'phone': venue.phone,
+    'image_link': venue.image_link,
+    'facebook_link': venue.facebook_link,
+    'genres': venue.genres,
+    'website_link': venue.website_link,
+    'seeking_talent': venue.seeking_talent,
+    'seeking_description': venue.seeking_description,
+    'upcoming_shows': [{
+      'artist_id': artist.id,
+      'artist_image_link': artist.image_link,
+      'start_time': show.start_time
+    } for artist, show in upcoming_shows],
+    'past_shows': [{
+      'artist_id': artist.id,
+      'artist_image_link': artist.image_link,
+      'start_time': show.start_time
+    }for artist, show in past_shows]
+  }   
+  return render_template('pages/show_venue.html', venue = data)
 
 #  Create Venue
 #  ----------------------------------------------------------------
@@ -191,7 +220,12 @@ def delete_venue(venue_id):
     db.session.rollback()
   finally:
     db.session.close()
-  return render_template('pages/home.html') #TODO My button deletes but does not return user to home page, maybe I need some sort of GET?
+
+  return redirect(url_for('delete')) #TODO My button deletes but does not return user to home page, maybe I need some sort of GET?
+
+@app.route('/delete', methods=['POST'])
+def delete():
+  return redirect(url_for('index'))
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -224,7 +258,32 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  data = Artist.query.get(artist_id)
+  currentTime = datetime.now()
+  artist = Artist.query.get(artist_id)
+  upcoming_shows = db.session.query(Venue, Show).join(Show).join(Artist).filter(Show.artist_id==artist_id, Show.venue_id==Venue.id, Show.start_time > currentTime).all()
+  past_shows = db.session.query(Venue, Show).join(Show).join(Artist).filter(Show.artist_id==artist_id, Show.venue_id==Venue.id, Show.start_time < currentTime).all()
+  data = {
+    'name': artist.name,
+    'city': artist.city,
+    'state': artist.state,
+    'phone': artist.phone,
+    'genres': artist.genres,
+    'facebook_link': artist.facebook_link,
+    'image_link': artist.image_link,
+    'website_link': artist.website_link,
+    'seeking_venue': artist.seeking_venue,
+    'seeking_description': artist.seeking_description,
+    'upcoming_shows': [{
+      'venue_id': venue.id,
+      'venue_image_link': venue.image_link,
+      'start_time': show.start_time
+    } for venue, show in upcoming_shows],
+    'past_shows': [{
+      'venue_id': venue.id,
+      'venue_image_link': venue.image_link,
+      'start_time': show.start_time
+    } for venue, show in past_shows]
+  }
   return render_template('pages/show_artist.html', artist=data)
 
 #  Update
@@ -232,7 +291,7 @@ def show_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
   artist = Artist.query.get(artist_id)
-  form = ArtistForm(obj=artist) #TODO have genres come pre populated again. This may be resolved once I clear up the array issue with the table
+  form = ArtistForm(obj=artist)
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
@@ -332,7 +391,22 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  data = Show.query.all()
+  #TODO
+  #shows = db.session.query(Show).join(Artist).join(Venue).all()
+  shows = db.session.query(Show).join(Artist).join(Venue).all()
+
+  #.filter(Show.venue_id==Venue.id, Show.artist_id==Artist.id)
+  #shows = Show.query.all()
+  for show in shows: 
+    print(show)
+  data = [{
+    'venue_id': show.venue_id,
+    'venue_name': show.venue_name,
+    'artist_id': show.artist_id,
+    'artist_name': show.artist_name,
+    'artist_image_link': show.artist_image_link,
+    'start_time': show.start_time
+  } for show in shows]
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
@@ -350,7 +424,6 @@ def create_show_submission():
       artist_id = form.artist_id.data,
       start_time = form.start_time.data
     )
-    #TODO need to do a join here to get the artist image link and the venue ID. Both are expected to be displayed on the Shows page
     db.session.add(data)
     db.session.commit()
     flash('Show was successfully listed!')
