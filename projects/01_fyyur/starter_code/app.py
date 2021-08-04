@@ -77,6 +77,13 @@ class Show(db.Model):
   artist = db.relationship('Artist', backref=db.backref('shows', lazy='joined', cascade='all, delete-orphan'))
   venue = db.relationship('Venue', backref=db.backref('shows', lazy='joined', cascade='all, delete-orphan'))
 
+  #Updated Show Many-to-Many relationship to include the relationship rows here instead of in the Artist and Venue tables.
+  #Used following articles to learn and refactor the code:
+  #https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#many-to-many
+  #https://docs.sqlalchemy.org/en/14/orm/backref.html#backref-arguments
+  #https://docs.sqlalchemy.org/en/14/orm/cascades.html#backref-cascade
+  #https://docs.sqlalchemy.org/en/14/orm/loading_relationships.html
+
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -118,6 +125,8 @@ def venues():
         'name': venue.name
       }
       for venue in venues if venue.city == i.city and venue.state == i.state]
+      #Could not get this to organize by city. Modeled my solution above based on information found in this forum article:
+      #https://knowledge.udacity.com/questions/501471
     })
 
   return render_template('pages/venues.html', areas = data)
@@ -152,6 +161,9 @@ def show_venue(venue_id):
 
   upcoming_shows = Show.query.filter(Show.venue_id==venue_id, Show.start_time >= currentTime).all()
   past_shows = Show.query.filter(Show.venue_id==venue_id,Show.start_time < currentTime).all()
+  #For filtering, I referenced the following forum article:
+  #https://knowledge.udacity.com/questions/261355
+  #I originally included the joins here but once I found the documentation for the lazy="joined" I was able to refine the query here just by going through Show
 
   data = {
     'id': venue.id,

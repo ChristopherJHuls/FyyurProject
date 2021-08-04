@@ -8,10 +8,12 @@ from wtforms.validators import DataRequired, AnyOf, URL, Regexp, ValidationError
 csrf = CSRFProtect()
 
 def validate_phone_number(form, field):
-        regex = re.compile('^\\(?([0-9]{3})\\)?[- ]?([0-9]{3})[- ]?([0-9]{4})$')
+        regex = re.compile('^\\(?([0-9]{3})\\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$')
         print(str(field.data))
         if not regex.match(str(field.data)):
             raise ValidationError('Not a valid phone number format. Please try xxx-xxx-xxxx')
+
+            
         #parsed_num = phonenumbers.parse(field.data)
 
         #if len(field.data) < 10:
@@ -20,8 +22,12 @@ def validate_phone_number(form, field):
         #    raise ValidationError('Invalid Phone Number. Please try again with 16 or less numbers. ex: xxx-xxx-xxxx')
         #elif (phonenumbers.is_valid_number(field.data)) == False:
         #    raise ValidationError('Invalid Phone Number. Please try with format xxx-xxx-xxxx')
-        #elif (phonenumbers.is_alpha_number('+1' + field.data)) == False:
+        #elif (phonenumbers.is_valid_number('+1' + field.data)) == False:
         #    raise ValidationError('Invalid Phone Number. Please try with format xxx-xxx-xxxx')
+
+        #Could not get the phonenumbers library validtion to work. Used following article and forum posts to understand implementing regex:
+        #https://realpython.com/regex-python/
+        #https://knowledge.udacity.com/questions/520267
 
 
 class ShowForm(Form):
@@ -105,7 +111,6 @@ class VenueForm(Form):
     )
     phone = StringField(
         'phone', validators=[DataRequired(), validate_phone_number]
-        #, Regexp('^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$', message='Please try format xxx-xxx-xxxx')
 
     )
     image_link = StringField(
@@ -214,7 +219,6 @@ class ArtistForm(Form):
         ]
     )
     phone = StringField(
-        # TODO implement validation logic for state
         'phone', validators=[DataRequired(), validate_phone_number]
         
     )
@@ -246,7 +250,6 @@ class ArtistForm(Form):
         ]
      )
     facebook_link = StringField(
-        # TODO implement enum restriction
         'facebook_link', validators=[Optional(), URL()]
      )
 
