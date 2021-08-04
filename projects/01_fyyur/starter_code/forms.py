@@ -1,7 +1,28 @@
 from datetime import datetime
-from flask_wtf import Form
+import re
+import phonenumbers
+from flask_wtf import Form, CSRFProtect
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, Regexp, ValidationError, Optional
+
+csrf = CSRFProtect()
+
+def validate_phone_number(form, field):
+        regex = re.compile('^\\(?([0-9]{3})\\)?[- ]?([0-9]{3})[- ]?([0-9]{4})$')
+        print(str(field.data))
+        if not regex.match(str(field.data)):
+            raise ValidationError('Not a valid phone number format. Please try xxx-xxx-xxxx')
+        #parsed_num = phonenumbers.parse(field.data)
+
+        #if len(field.data) < 10:
+        #   raise ValidationError('Invalid Phone Number. Please try again with 10 or more numbers. ex: xxx-xxx-xxxx')
+        #elif len(field.data) > 16:
+        #    raise ValidationError('Invalid Phone Number. Please try again with 16 or less numbers. ex: xxx-xxx-xxxx')
+        #elif (phonenumbers.is_valid_number(field.data)) == False:
+        #    raise ValidationError('Invalid Phone Number. Please try with format xxx-xxx-xxxx')
+        #elif (phonenumbers.is_alpha_number('+1' + field.data)) == False:
+        #    raise ValidationError('Invalid Phone Number. Please try with format xxx-xxx-xxxx')
+
 
 class ShowForm(Form):
     artist_id = StringField(
@@ -83,13 +104,14 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone', validators=[DataRequired(), validate_phone_number]
+        #, Regexp('^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$', message='Please try format xxx-xxx-xxxx')
+
     )
     image_link = StringField(
         'image_link'
     )
     genres = SelectMultipleField(
-        # TODO implement enum restriction
         'genres', validators=[DataRequired()],
         choices=[
             ('Alternative', 'Alternative'),
@@ -114,7 +136,7 @@ class VenueForm(Form):
         ]
     )
     facebook_link = StringField(
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[Optional(), URL()]
     )
     website_link = StringField(
         'website_link'
@@ -193,7 +215,8 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # TODO implement validation logic for state
-        'phone'
+        'phone', validators=[DataRequired(), validate_phone_number]
+        
     )
     image_link = StringField(
         'image_link'
@@ -224,7 +247,7 @@ class ArtistForm(Form):
      )
     facebook_link = StringField(
         # TODO implement enum restriction
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[Optional(), URL()]
      )
 
     website_link = StringField(
@@ -236,4 +259,7 @@ class ArtistForm(Form):
     seeking_description = StringField(
             'seeking_description'
      )
+
+    
+        
 
