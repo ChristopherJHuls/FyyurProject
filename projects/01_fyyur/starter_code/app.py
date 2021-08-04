@@ -222,15 +222,14 @@ def create_venue_submission():
 @app.route('/venues/<venue_id>/delete')
 def delete_venue(venue_id):
   try: 
-    venue = Venue.query.filter_by(id=venue_id).delete()
-    db.session.delete(venue)
+    Venue.query.filter_by(id=venue_id).delete()
     db.session.commit()
   except:
     db.session.rollback()
   finally:
     db.session.close()
 
-  return render_template('pages/home.html') #TODO My button deletes but does not return user to home page, maybe I need some sort of GET?
+  return render_template('pages/home.html')
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -415,7 +414,7 @@ def create_artist_submission():
 @app.route('/shows')
 def shows():
   #TODO
-  shows = Show.query.all()
+  shows = Show.query.order_by(Show.start_time).all()
 
   for show in shows: 
     print(show)
