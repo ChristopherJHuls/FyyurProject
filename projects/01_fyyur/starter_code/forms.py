@@ -6,6 +6,10 @@ from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
 from wtforms.validators import DataRequired, AnyOf, URL, Regexp, ValidationError, Optional
 
 csrf = CSRFProtect()
+#Recieved CSFR errors and used the following resources to resolve across my Forms.py, App.py and HTML files:
+#https://knowledge.udacity.com/questions/530612
+#https://stackoverflow.com/questions/21501058/form-validation-fails-due-missing-csrf
+#https://flask-wtf.readthedocs.io/en/latest/csrf/
 
 def validate_phone_number(form, field):
         regex = re.compile('^\\(?([0-9]{3})\\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$')
@@ -13,7 +17,7 @@ def validate_phone_number(form, field):
         if not regex.match(str(field.data)):
             raise ValidationError('Not a valid phone number format. Please try xxx-xxx-xxxx')
 
-            
+
         #parsed_num = phonenumbers.parse(field.data)
 
         #if len(field.data) < 10:
@@ -25,9 +29,14 @@ def validate_phone_number(form, field):
         #elif (phonenumbers.is_valid_number('+1' + field.data)) == False:
         #    raise ValidationError('Invalid Phone Number. Please try with format xxx-xxx-xxxx')
 
+        #Before the project I had no clue how to the phone number validation. Documentation for both methodolgies below:
+        #Following helped with suggesting phonenumbers import and use:
+        #https://stackoverflow.com/questions/36251149/validating-us-phone-number-in-wtforms
+        #https://www.geeksforgeeks.org/phonenumbers-module-in-python/
         #Could not get the phonenumbers library validtion to work. Used following article and forum posts to understand implementing regex:
         #https://realpython.com/regex-python/
         #https://knowledge.udacity.com/questions/520267
+        
 
 
 class ShowForm(Form):

@@ -161,8 +161,9 @@ def show_venue(venue_id):
 
   upcoming_shows = Show.query.filter(Show.venue_id==venue_id, Show.start_time >= currentTime).all()
   past_shows = Show.query.filter(Show.venue_id==venue_id,Show.start_time < currentTime).all()
-  #For filtering, I referenced the following forum article:
+  #For filtering, I referenced the following forum articles:
   #https://knowledge.udacity.com/questions/261355
+  #https://knowledge.udacity.com/questions/452402
   #I originally included the joins here but once I found the documentation for the lazy="joined" I was able to refine the query here just by going through Show
 
   data = {
@@ -229,6 +230,8 @@ def create_venue_submission():
   else:
     flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.')
     flash(f"{form.errors.items()}")
+    #was recommended to use flash(f"{form.errors.items()}") by a friend to help trouble shoot while I was validating
+    #Additional documentation: https://wtforms.readthedocs.io/en/2.3.x/forms/#wtforms.form.Form.errors
     return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>/delete')
@@ -258,6 +261,7 @@ def search_artists():
     name = item[1]
 
   artists = Artist.query.filter(Artist.name.ilike('%' + name + '%')).all()
+
 
   response = {
     'count': len(artists),
