@@ -15,6 +15,7 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form, CSRFProtect
 from forms import *
+from models import * 
 from flask_migrate import Migrate
 import psycopg2
 
@@ -27,62 +28,9 @@ moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
 #in config:
 #SQLALCHEMY_DATABASE_URI = 'postgresql://postgres@localhost:5432/fyyur'
-
-csrf.init_app(app)
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    address = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String()), nullable=False)
-    website_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(120))
-
-class Artist(db.Model):
-    __tablename__ = 'Artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String()), nullable=False)
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    website_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(120))
-
-class Show(db.Model):
-  __tablename__ = 'Show'
-
-  show_id = db.Column(db.Integer, primary_key=True)
-  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
-  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
-  start_time = db.Column(db.DateTime, nullable=False)
-  artist = db.relationship('Artist', backref=db.backref('shows', lazy='joined', cascade='all, delete-orphan'))
-  venue = db.relationship('Venue', backref=db.backref('shows', lazy='joined', cascade='all, delete-orphan'))
-
-  #Updated Show Many-to-Many relationship to include the relationship rows here instead of in the Artist and Venue tables.
-  #Used following articles to learn and refactor the code:
-  #https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#many-to-many
-  #https://docs.sqlalchemy.org/en/14/orm/backref.html#backref-arguments
-  #https://docs.sqlalchemy.org/en/14/orm/cascades.html#backref-cascade
-  #https://docs.sqlalchemy.org/en/14/orm/loading_relationships.html
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -202,7 +150,7 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  form = VenueForm(request.form, meta={"csrf": False})
+  form = VenueForm()
   if form.validate():
     try:
       data = Venue(
@@ -318,7 +266,7 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  form = ArtistForm(request.form, meta={"csrf": False})
+  form = ArtistForm()
   if form.validate():
     try:
       artist = Artist.query.get(artist_id)
@@ -354,7 +302,7 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-  form = VenueForm(request.form, meta={"csrf": False})
+  form = VenueForm()
   if form.validate():
     try: 
       venue = Venue.query.get(venue_id)
@@ -392,7 +340,7 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-  form = ArtistForm(request.form, meta={"csrf": False})
+  form = ArtistForm()
   if form.validate():
     try:
       
@@ -452,7 +400,7 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  form = ShowForm(request.form, meta={"csrf": False})
+  form = ShowForm()
   if form.validate():
     try:
       data = Show(

@@ -5,7 +5,6 @@ from flask_wtf import Form, CSRFProtect
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
 from wtforms.validators import DataRequired, AnyOf, URL, Regexp, ValidationError, Optional
 
-csrf = CSRFProtect()
 #Recieved CSFR errors and used the following resources to resolve across my Forms.py, App.py and HTML files:
 #https://knowledge.udacity.com/questions/530612
 #https://stackoverflow.com/questions/21501058/form-validation-fails-due-missing-csrf
