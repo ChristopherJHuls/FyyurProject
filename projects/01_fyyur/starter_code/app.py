@@ -9,6 +9,7 @@ import re
 import dateutil.parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from sqlalchemy.orm import query
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -60,6 +61,13 @@ def index():
 
 @app.route('/venues')
 def venues():
+  """
+  Dispkays all current existing venues that have been created. 
+  
+  Takes no arguments. 
+  
+  Returns no values.
+  """
   data = []
   venues = Venue.query.all()
   areas = Venue.query.distinct(Venue.city, Venue.state).all()
@@ -81,6 +89,11 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
+  """
+  Search endpoint the find existing venues. Case INSENSITIVE search.
+
+  Takes no arguments, returns no values.
+  """
   search_term = request.form.items('search_term')
   name = ''
   for item in search_term:
@@ -104,11 +117,19 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
+  """
+  Displays a specific venue containing the venues name, location, contact info, relevant links, talent seeking info and upcoming/past shows.
+
+  Takes a venue id argument which is used to query the database to find info forthe selected venue.
+  """
   venue = Venue.query.get(venue_id)
   currentTime = datetime.now()
 
-  upcoming_shows = Show.query.filter(Show.venue_id==venue_id, Show.start_time >= currentTime).all()
-  past_shows = Show.query.filter(Show.venue_id==venue_id,Show.start_time < currentTime).all()
+  upcoming_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id, Show.start_time >= currentTime).all()
+  past_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id, Show.start_time <= currentTime).all()
+
+  #upcoming_shows = Show.query.filter(Show.venue_id==venue_id, Show.start_time >= currentTime).all()
+  #past_shows = Show.query.filter(Show.venue_id==venue_id,Show.start_time < currentTime).all()
   #For filtering, I referenced the following forum articles:
   #https://knowledge.udacity.com/questions/261355
   #https://knowledge.udacity.com/questions/452402
@@ -150,6 +171,11 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
+  """
+  Creates a new venue in the database containing relevant info such as the venues name, location, contact info, relevant links, and talent seeking info.
+
+  Takes no arguments. Returns user to specified html page (in this case the home page) with a notification for success or failure. 
+  """
   form = VenueForm()
   if form.validate():
     try:
@@ -184,6 +210,11 @@ def create_venue_submission():
 
 @app.route('/venues/<venue_id>/delete')
 def delete_venue(venue_id):
+  """
+  Delete an existing venue. 
+
+  Takes a venue id as an argument. 
+  """
   try: 
     Venue.query.filter_by(id=venue_id).delete()
     db.session.commit()
@@ -198,6 +229,11 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
+  """
+  Displays all existing artists in the database. 
+
+  Takes no arguments.
+  """
   data = Artist.query.all()
   return render_template('pages/artists.html', artists=data)
 
@@ -226,10 +262,18 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
+  """
+  Displays a specific artist and their info such as name, contact info, relevant links, seeking venue information and upcoming/past shows. 
+
+  Takes an artist id as an argument which is used to query the database.
+  """
   currentTime = datetime.now()
   artist = Artist.query.get(artist_id)
-  upcoming_shows = Show.query.filter(Show.artist_id==artist_id, Show.start_time >= currentTime).all()
-  past_shows = Show.query.filter(Show.artist_id==artist_id , Show.start_time< currentTime).all()
+  #upcoming_shows = Show.query.filter(Show.artist_id==artist_id, Show.start_time >= currentTime).all()
+  #past_shows = Show.query.filter(Show.artist_id==artist_id , Show.start_time< currentTime).all()
+
+  upcoming_shows = db.session.query(Show).join(Artist).filter(Show.artist_id == artist_id, Show.start_time >= currentTime).all()
+  past_shows = db.session.query(Show).join(Artist).filter(Show.artist_id == artist_id, Show.start_time <= currentTime).all()
 
   data = {
     'id': artist.id,
@@ -266,6 +310,11 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
+  """
+  Submission form to edit an existing artist entry, all fields come prepopulated thanks to the edit_artist GET class. All fields apart from ID are able to be edited.
+
+  Takes artist id as an argument.
+  """
   form = ArtistForm()
   if form.validate():
     try:
@@ -283,6 +332,7 @@ def edit_artist_submission(artist_id):
       db.session.add(artist)
       db.session.commit()
     except:
+      flash(f"{form.errors.items()}")
       db.session.rollback()
     finally:
       db.session.close()
@@ -302,6 +352,11 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
+  """
+  Submission form to edit an existing venue entry, all fields come prepopulated thanks to the edit_venue GET class. All fields apart from ID are able to be edited.
+
+  Takes venue id as an argument.
+  """
   form = VenueForm()
   if form.validate():
     try: 
@@ -340,6 +395,11 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
+  """
+  Creates a new artist record in the database with information such as name, contact info, relevant links, and seeking venue information.
+
+  Takes no arguments.
+  """
   form = ArtistForm()
   if form.validate():
     try:
@@ -377,8 +437,14 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  #TODO
-  shows = Show.query.order_by(Show.start_time).all()
+  """
+  Displays all created shows with the venue, artist and show time information. Joins the artist and venue tables to gain access to relevant information
+
+  Takes no arguments.
+  """
+  #shows = Show.query.order_by(Show.start_time).all()
+
+  shows = db.session.query(Show).join(Artist).join(Venue).order_by(Show.start_time).all()
 
   for show in shows: 
     print(show)
@@ -400,6 +466,12 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
+  """
+  Creates a new show in the database using the artist and venue ids to include a start time. 
+
+  Takes no arguments. 
+  """
+
   form = ShowForm()
   if form.validate():
     try:
