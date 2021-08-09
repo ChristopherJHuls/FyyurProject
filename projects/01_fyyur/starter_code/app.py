@@ -332,7 +332,6 @@ def edit_artist_submission(artist_id):
       db.session.add(artist)
       db.session.commit()
     except:
-      flash(f"{form.errors.items()}")
       db.session.rollback()
     finally:
       db.session.close()
