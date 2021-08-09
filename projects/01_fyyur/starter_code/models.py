@@ -9,10 +9,8 @@ from app import *
 
 
 
-app = Flask(__name__)
-moment = Moment(app)
-app.config.from_object('config')
-db = SQLAlchemy(app)
+#app.config.from_object('config')
+db = SQLAlchemy()
 migrate = Migrate(app, db)
 
 
