@@ -1,18 +1,8 @@
-import psycopg2
-from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask
-from flask_migrate import Migrate
-from flask_wtf import CSRFProtect
 from forms import *
-from app import * 
 
 
-
-#app.config.from_object('config')
 db = SQLAlchemy()
-migrate = Migrate(app, db)
-
 
 
 #----------------------------------------------------------------------------#
